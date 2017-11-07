@@ -1,9 +1,9 @@
-const {mainDb, archiveDb, runFor} = require('experimental-server');
+const {eventsDb, archiveDb, runFor} = require('experimental-server');
 
 const R = require('ramda');
 
 const getEvents = async() => {
- const result = await mainDb.find({
+ const result = await eventsDb.find({
   selector: {
    type: "EVENT",
    status: {
@@ -24,12 +24,12 @@ const handleEvent = async(event) => {
  switch (event.status) {
   case "draft":
    if (event.preProcessors && event.preProcessors.length > 0) {
-    return await mainDb.put(R.merge(event, {
+    return await eventsDb.put(R.merge(event, {
      status: "preProcessing",
      preProcessor: event.preProcessors[0].name
     }));
    } else {
-    return await mainDb.put(R.merge(event, {status: "processing"}));
+    return await eventsDb.put(R.merge(event, {status: "processing"}));
    }
    break;
   case "preProcessing":
@@ -39,11 +39,11 @@ const handleEvent = async(event) => {
    }
    const currentPreProcessorIndex = event.preProcessors.indexOf(currentPreProcessor);
    if ((currentPreProcessorIndex + 1) < event.preProcessors.length) {
-    return await mainDb.put(R.merge(event, {
+    return await eventsDb.put(R.merge(event, {
      preProcessor: event.preProcessors[currentPreProcessorIndex + 1].name
     }));
    } else {
-    return await mainDb.put(R.merge(event, {
+    return await eventsDb.put(R.merge(event, {
      status: "processing",
      preProcessor: undefined
     }));
@@ -55,12 +55,12 @@ const handleEvent = async(event) => {
    });
    if (isAppliedOnAllRelevantDocs) {
     if (event.postProcessors && event.postProcessors.length > 0) {
-     return await mainDb.put(R.merge(event, {
+     return await eventsDb.put(R.merge(event, {
       status: "postProcessing",
       postProcessor: event.postProcessors[0].name
      }));
     } else {
-     return await mainDb.put(R.merge(event, {status: "done"}));
+     return await eventsDb.put(R.merge(event, {status: "done"}));
     }
    }
    break;
@@ -71,11 +71,11 @@ const handleEvent = async(event) => {
    }
    const currentPostProcessorIndex = event.postProcessors.indexOf(currentPostProcessor);
    if ((currentPostProcessorIndex + 1) < event.postProcessors.length) {
-    return await mainDb.put(R.merge(event, {
+    return await eventsDb.put(R.merge(event, {
      postProcessor: event.postProcessors[currentPostProcessorIndex + 1].name
     }));
    } else {
-    return await mainDb.put(R.merge(event, {
+    return await eventsDb.put(R.merge(event, {
      status: "done",
      postProcessor: undefined
     }));
@@ -83,13 +83,13 @@ const handleEvent = async(event) => {
    break;
   case 'done':
     if(checkToArchive(event)){
-      return await mainDb.put(R.merge(event, {status: "archived"}));
+      return await eventsDb.put(R.merge(event, {status: "archived"}));
     }
   case "archived":
   try {
     const doc = await archiveDb.get(event._id);
     if(doc){
-      return await mainDb.put(R.merge(event, {status: "deleted", _deleted: true}));
+      return await eventsDb.put(R.merge(event, {status: "deleted", _deleted: true}));
     }
   } catch (e) {
 
