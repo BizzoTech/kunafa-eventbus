@@ -89,7 +89,7 @@ const handleEvent = async(event) => {
   try {
     const doc = await archiveDb.get(event._id);
     if(doc){
-      return await eventsDb.put(R.merge(event, {status: "deleted", _deleted: true}));
+      return await eventsDb.put({_id: event._id, _rev: event._rev, status: "deleted", _deleted: true});
     }
   } catch (e) {
 
